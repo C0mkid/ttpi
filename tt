@@ -1,0 +1,44 @@
+#!/usr/bin/python2.7
+
+from subprocess import check_output, STDOUT, CalledProcessError, call
+from sys import argv, stdout, stdin
+import fileinput
+
+def run(func):
+	if type(func) != type([]) and type(func) == type(""):
+		func = func.split(' ')
+
+	try:
+		out = check_output(func, stderr=STDOUT)[:-1]
+	except CalledProcessError as o:
+		out = o.output[:-1]
+	
+	return out
+
+ls = run('tmux ls')
+
+if len(argv) == 1 and 'windows' in ls:
+	print ls
+	exit()
+
+names = [i.split(":")[0]for i in ls.split("\n")]
+
+if len(argv) == 1:
+	argv = ['tt', '0']
+
+if argv[1] in names:
+	call(['tmux', 'attach', '-t', argv[1]])
+	exit()
+
+response = ''
+while response != 'y':
+	if not 'windows' in ls:
+		out = 'no sessions, create one called "%s"? (y/n) '
+	else:
+		out = 'session "%s" does not exist, create it? (y/n) '
+	stdout.write(out % argv[1])
+	response = stdin.readline()[:-1].lower()
+	if response == 'y':
+		call(['tmux', 'new-session', '-s', argv[1]])
+	elif response == 'n':
+		exit()
